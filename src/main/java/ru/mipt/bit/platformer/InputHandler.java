@@ -3,6 +3,7 @@ package ru.mipt.bit.platformer;
 import com.badlogic.gdx.Gdx;
 import static com.badlogic.gdx.Input.Keys.*;
 
+
 public class InputHandler {
     
     public Direction getInputDirection() {
@@ -20,4 +21,8 @@ public class InputHandler {
         }
         return null;
     }
+
+    // public boolean isShootPressed() {
+    //     return Gdx.input.isKeyPressed(SPACE);
+    // }
 }
