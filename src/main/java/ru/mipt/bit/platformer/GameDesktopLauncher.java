@@ -10,8 +10,9 @@ import com.badlogic.gdx.maps.MapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
-import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Interpolation;
+import ru.mipt.bit.platformer.config.GameConfiguration;
+import ru.mipt.bit.platformer.factory.GameObjectFactory;
 import ru.mipt.bit.platformer.util.TileMovement;
 
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
@@ -27,29 +28,42 @@ public class GameDesktopLauncher implements ApplicationListener {
     private Tank player;
     private Obstacle treeObstacle;
     private InputHandler inputHandler;
+    
+    private final GameConfiguration config;
+    private final GameObjectFactory factory;
+    
+    public GameDesktopLauncher(GameConfiguration config) {
+        this.config = config;
+        this.factory = new GameObjectFactory(config);
+    }
+    
+    public GameDesktopLauncher() {
+        this(new GameConfiguration());
+    }
 
     @Override
     public void create() {
         batch = new SpriteBatch();
 
-        // load level tiles
-        level = new TmxMapLoader().load("level.tmx");
+        // load level tiles using configuration
+        level = new TmxMapLoader().load(config.getLevelPath());
         levelRenderer = createSingleLayerMapRenderer(level, batch);
         TiledMapTileLayer groundLayer = getSingleLayer(level);
         tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
 
-        // сreate game objects
-        player = new Tank("images/tank_blue.png", new GridPoint2(1, 1), tileMovement);
-        treeObstacle = new Obstacle("images/greenTree.png", new GridPoint2(1, 3), groundLayer);
+        // create game objects using factory
+        player = factory.createTank(tileMovement);
+        treeObstacle = factory.createObstacle(groundLayer);
         
-        // сreate input handler
+        // create input handler
         inputHandler = new InputHandler();
     }
 
     @Override
     public void render() {
-        // clear the screen
-        Gdx.gl.glClearColor(0f, 0f, 0.2f, 1f);
+        // clear the screen using configuration
+        Gdx.gl.glClearColor(config.getBackgroundRed(), config.getBackgroundGreen(), 
+                           config.getBackgroundBlue(), config.getBackgroundAlpha());
         Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
 
         // get time passed since the last render
@@ -98,9 +112,12 @@ public class GameDesktopLauncher implements ApplicationListener {
     }
 
     public static void main(String[] args) {
-        Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-        // level width: 10 tiles x 128px, height: 8 tiles x 128px
-        config.setWindowedMode(1280, 1024);
-        new Lwjgl3Application(new GameDesktopLauncher(), config);
+        GameConfiguration gameConfig = new GameConfiguration();
+        Lwjgl3ApplicationConfiguration appConfig = new Lwjgl3ApplicationConfiguration();
+        
+        // Set window size from game configuration
+        appConfig.setWindowedMode(gameConfig.getWindowWidth(), gameConfig.getWindowHeight());
+        
+        new Lwjgl3Application(new GameDesktopLauncher(gameConfig), appConfig);
     }
 }

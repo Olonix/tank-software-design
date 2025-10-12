@@ -5,12 +5,12 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Rectangle;
-import ru.mipt.bit.platformer.model.GameEntity;
+import ru.mipt.bit.platformer.model.GameModel;
 import ru.mipt.bit.platformer.util.TileMovement;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 
 
-public class TankGraphics implements Renderable {
+public class TankGraphics implements TankGraphicsRenderer {
     private final Texture texture;
     private final TextureRegion textureRegion;
     private final Rectangle rectangle;
@@ -28,7 +28,8 @@ public class TankGraphics implements Renderable {
         drawTextureRegionUnscaled(batch, textureRegion, rectangle, 0f);
     }
 
-    public void render(Batch batch, GameEntity entity, GridPoint2 destination, float progress) {
+    @Override
+    public void render(Batch batch, GameModel entity, GridPoint2 destination, float progress) {
         tileMovement.moveRectangleBetweenTileCenters(rectangle, entity.getCoordinates(), destination, progress);
         
         drawTextureRegionUnscaled(batch, textureRegion, rectangle, entity.getRotation());

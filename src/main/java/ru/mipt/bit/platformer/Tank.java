@@ -3,13 +3,20 @@ package ru.mipt.bit.platformer;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.GridPoint2;
 import ru.mipt.bit.platformer.graphics.TankGraphics;
+import ru.mipt.bit.platformer.graphics.TankGraphicsRenderer;
 import ru.mipt.bit.platformer.model.TankModel;
+import ru.mipt.bit.platformer.model.TankMovable;
 import ru.mipt.bit.platformer.util.TileMovement;
 
 
 public class Tank {
-    private final TankModel model;
-    private final TankGraphics graphics;
+    private final TankMovable model;
+    private final TankGraphicsRenderer graphics;
+
+    public Tank(TankMovable model, TankGraphicsRenderer graphics) {
+        this.model = model;
+        this.graphics = graphics;
+    }
 
     public Tank(String texturePath, GridPoint2 initialCoordinates, TileMovement tileMovement) {
         this.model = new TankModel(initialCoordinates);
@@ -40,7 +47,7 @@ public class Tank {
         return model.getCoordinates();
     }
 
-    public TankModel getModel() {
+    public TankMovable getModel() {
         return model;
     }
 }

@@ -5,16 +5,16 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.math.Rectangle;
-import ru.mipt.bit.platformer.model.GameEntity;
+import ru.mipt.bit.platformer.model.GameModel;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 
 
-public class ObstacleGraphics implements Renderable {
+public class ObstacleGraphics implements Graphics {
     private final Texture texture;
     private final TextureRegion textureRegion;
     private final Rectangle rectangle;
 
-    public ObstacleGraphics(String texturePath, GameEntity entity, TiledMapTileLayer tileLayer) {
+    public ObstacleGraphics(String texturePath, GameModel entity, TiledMapTileLayer tileLayer) {
         this.texture = new Texture(texturePath);
         this.textureRegion = new TextureRegion(texture);
         this.rectangle = createBoundingRectangle(textureRegion);

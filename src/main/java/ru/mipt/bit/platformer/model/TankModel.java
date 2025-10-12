@@ -6,8 +6,8 @@ import static com.badlogic.gdx.math.MathUtils.isEqual;
 
 
 // Tank model without graphics components
-public class TankModel implements GameEntity {
-    private static final float MOVEMENT_SPEED = 2f;
+public class TankModel implements TankMovable {
+    private final float movementSpeed;
     
     private GridPoint2 coordinates;
     private GridPoint2 destinationCoordinates;
@@ -15,13 +15,19 @@ public class TankModel implements GameEntity {
     private float rotation = 0f;
 
     public TankModel(GridPoint2 initialCoordinates) {
+        this(initialCoordinates, 2f); // default movement speed
+    }
+    
+    public TankModel(GridPoint2 initialCoordinates, float movementSpeed) {
         this.coordinates = new GridPoint2(initialCoordinates);
         this.destinationCoordinates = new GridPoint2(initialCoordinates);
+        this.movementSpeed = movementSpeed;
     }
 
+    @Override
     public void update(float deltaTime) {
         if (isMoving()) {
-            movementProgress = Math.min(1f, movementProgress + deltaTime * MOVEMENT_SPEED);
+            movementProgress = Math.min(1f, movementProgress + deltaTime * movementSpeed);
             
             if (!isMoving()) {
                 coordinates.set(destinationCoordinates);
@@ -29,7 +35,8 @@ public class TankModel implements GameEntity {
         }
     }
 
-    public boolean tryMove(Direction direction, ObstacleModel obstacle) {
+    @Override
+    public boolean tryMove(Direction direction, GameModel obstacle) {
         if (isMoving()) {
             return false;
         }
@@ -46,6 +53,11 @@ public class TankModel implements GameEntity {
         return true;
     }
 
+    public boolean tryMove(Direction direction, ObstacleModel obstacle) {
+        return tryMove(direction, (GameModel) obstacle);
+    }
+
+    @Override
     public boolean isMoving() {
         return !isEqual(movementProgress, 1f);
     }
