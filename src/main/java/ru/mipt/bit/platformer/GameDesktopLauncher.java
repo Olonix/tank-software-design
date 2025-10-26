@@ -11,9 +11,15 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.Interpolation;
+import com.badlogic.gdx.math.GridPoint2;
 import ru.mipt.bit.platformer.config.GameConfiguration;
 import ru.mipt.bit.platformer.factory.GameObjectFactory;
 import ru.mipt.bit.platformer.util.TileMovement;
+import ru.mipt.bit.platformer.level.LevelData;
+import ru.mipt.bit.platformer.level.LevelLoader;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
@@ -26,19 +32,25 @@ public class GameDesktopLauncher implements ApplicationListener {
     private TileMovement tileMovement;
     
     private Tank player;
-    private Obstacle treeObstacle;
+    private List<Obstacle> obstacles;
     private InputHandler inputHandler;
     
     private final GameConfiguration config;
     private final GameObjectFactory factory;
+    private final LevelLoader levelLoader;
     
-    public GameDesktopLauncher(GameConfiguration config) {
+    public GameDesktopLauncher(GameConfiguration config, LevelLoader levelLoader) {
         this.config = config;
         this.factory = new GameObjectFactory(config);
+        this.levelLoader = levelLoader;
+    }
+    
+    public GameDesktopLauncher(GameConfiguration config) {
+        this(config, null);
     }
     
     public GameDesktopLauncher() {
-        this(new GameConfiguration());
+        this(new GameConfiguration(), null);
     }
 
     @Override
@@ -52,8 +64,35 @@ public class GameDesktopLauncher implements ApplicationListener {
         tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
 
         // create game objects using factory
-        player = factory.createTank(tileMovement);
-        treeObstacle = factory.createObstacle(groundLayer);
+        obstacles = new ArrayList<>();
+        
+        // Load level if loader is provided
+        if (levelLoader != null) {
+            LevelData levelData = levelLoader.loadLevel();
+            
+            // Create player at loaded position
+            player = factory.createCustomTank(
+                config.getPlayerTexturePath(),
+                levelData.getPlayerStartPosition(),
+                config.getTankMovementSpeed(),
+                tileMovement
+            );
+            
+            // Create obstacles at loaded positions
+            for (GridPoint2 obstaclePos : levelData.getObstaclePositions()) {
+                Obstacle obstacle = factory.createCustomObstacle(
+                    config.getObstacleTexturePath(),
+                    obstaclePos,
+                    groundLayer
+                );
+                obstacles.add(obstacle);
+            }
+        } else {
+            // Use default configuration
+            player = factory.createTank(tileMovement);
+            Obstacle treeObstacle = factory.createObstacle(groundLayer);
+            obstacles.add(treeObstacle);
+        }
         
         // create input handler
         inputHandler = new InputHandler();
@@ -72,7 +111,11 @@ public class GameDesktopLauncher implements ApplicationListener {
         // handle input
         Direction inputDirection = inputHandler.getInputDirection();
         if (inputDirection != null) {
-            player.tryMove(inputDirection, treeObstacle);
+            // Check collision with all obstacles at once
+            if (player.canMove(inputDirection, obstacles)) {
+                // No collision detected, perform movement
+                player.move(inputDirection);
+            }
         }
 
         // update game objects
@@ -83,7 +126,9 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         batch.begin();
         player.render(batch);
-        treeObstacle.render(batch);
+        for (Obstacle obstacle : obstacles) {
+            obstacle.render(batch);
+        }
         batch.end();
     }
 
@@ -105,7 +150,9 @@ public class GameDesktopLauncher implements ApplicationListener {
     @Override
     public void dispose() {
         // dispose of all the native resources (classes which implement com.badlogic.gdx.utils.Disposable)
-        treeObstacle.dispose();
+        for (Obstacle obstacle : obstacles) {
+            obstacle.dispose();
+        }
         player.dispose();
         level.dispose();
         batch.dispose();

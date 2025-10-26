@@ -8,6 +8,8 @@ import ru.mipt.bit.platformer.model.TankModel;
 import ru.mipt.bit.platformer.model.TankMovable;
 import ru.mipt.bit.platformer.util.TileMovement;
 
+import java.util.List;
+
 
 public class Tank {
     private final TankMovable model;
@@ -29,6 +31,36 @@ public class Tank {
 
     public boolean tryMove(Direction direction, Obstacle obstacle) {
         return model.tryMove(direction, obstacle.getModel());
+    }
+
+    public boolean canMove(Direction direction, Obstacle obstacle) {
+        if (model.isMoving()) {
+            return false;
+        }
+
+        GridPoint2 newDestination = direction.apply(getCoordinates());
+        return !obstacle.getCoordinates().equals(newDestination);
+    }
+
+    public boolean canMove(Direction direction, List<Obstacle> obstacles) {
+        if (model.isMoving()) {
+            return false;
+        }
+
+        GridPoint2 newDestination = direction.apply(getCoordinates());
+        for (Obstacle obstacle : obstacles) {
+            if (obstacle.getCoordinates().equals(newDestination)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean move(Direction direction) {
+        if (model instanceof TankModel) {
+            return ((TankModel) model).move(direction);
+        }
+        return false;
     }
 
     public boolean isMoving() {

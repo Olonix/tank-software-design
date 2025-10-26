@@ -16,6 +16,24 @@ application {
     }
 }
 
+task runWithFileLevel(type: JavaExec) {
+    group = 'application'
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'ru.mipt.bit.platformer.GameWithFileLevel'
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+        jvmArgs = ['-XstartOnFirstThread']
+    }
+}
+
+task runWithRandomLevel(type: JavaExec) {
+    group = 'application'
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'ru.mipt.bit.platformer.GameWithRandomLevel'
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+        jvmArgs = ['-XstartOnFirstThread']
+    }
+}
+
 repositories {
     mavenCentral()
 }
