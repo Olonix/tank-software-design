@@ -57,6 +57,18 @@ public class TankModel implements TankMovable {
         return tryMove(direction, (GameModel) obstacle);
     }
 
+    public boolean move(Direction direction) {
+        if (isMoving()) {
+            return false;
+        }
+
+        GridPoint2 newDestination = direction.apply(coordinates);
+        destinationCoordinates.set(newDestination);
+        movementProgress = 0f;
+        rotation = direction.getRotation();
+        return true;
+    }
+
     @Override
     public boolean isMoving() {
         return !isEqual(movementProgress, 1f);
