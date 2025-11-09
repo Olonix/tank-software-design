@@ -13,7 +13,7 @@ public class GameWithRandomLevel {
 
         appConfig.setWindowedMode(gameConfig.getWindowWidth(), gameConfig.getWindowHeight());
         
-        RandomLevelLoader randomLoader = new RandomLevelLoader(10, 8, 15);
+        RandomLevelLoader randomLoader = new RandomLevelLoader(10, 8, 15, 3);
         
         new Lwjgl3Application(new GameDesktopLauncher(gameConfig, randomLoader), appConfig);
     }
