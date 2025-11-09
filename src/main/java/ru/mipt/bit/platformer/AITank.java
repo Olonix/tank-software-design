@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.GridPoint2;
 import ru.mipt.bit.platformer.command.Command;
 import ru.mipt.bit.platformer.command.MoveCommand;
+import ru.mipt.bit.platformer.graphics.HealthBarDecorator;
 import ru.mipt.bit.platformer.graphics.TankGraphics;
 import ru.mipt.bit.platformer.graphics.TankGraphicsRenderer;
 import ru.mipt.bit.platformer.model.TankModel;
@@ -26,7 +27,8 @@ public class AITank {
 
     public AITank(String texturePath, GridPoint2 initialCoordinates, TileMovement tileMovement) {
         this.model = new TankModel(initialCoordinates);
-        this.graphics = new TankGraphics(texturePath, tileMovement);
+        TankGraphics baseGraphics = new TankGraphics(texturePath, tileMovement);
+        this.graphics = new HealthBarDecorator(baseGraphics);
     }
 
     public void update(float deltaTime, List<Obstacle> obstacles, List<AITank> otherTanks, TankMovable playerTank, int levelWidth, int levelHeight) {
@@ -79,5 +81,9 @@ public class AITank {
 
     public boolean isMoving() {
         return model.isMoving();
+    }
+
+    public HealthBarDecorator getHealthBarDecorator() {
+        return (HealthBarDecorator) graphics;
     }
 }

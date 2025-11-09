@@ -37,6 +37,7 @@ public class GameDesktopLauncher implements ApplicationListener {
     private InputHandler inputHandler;
     private int levelWidth;
     private int levelHeight;
+    private boolean showHealthBars = false;
     
     private final GameConfiguration config;
     private final GameObjectFactory factory;
@@ -131,6 +132,15 @@ public class GameDesktopLauncher implements ApplicationListener {
             if (canPlayerMove(inputDirection)) {
                 // No collision detected, perform movement
                 player.move(inputDirection);
+            }
+        }
+
+        // handle health bar toggle
+        if (inputHandler.isToggleHealthPressed()) {
+            showHealthBars = !showHealthBars;
+            player.getHealthBarDecorator().setShowHealthBar(showHealthBars);
+            for (AITank aiTank : aiTanks) {
+                aiTank.getHealthBarDecorator().setShowHealthBar(showHealthBars);
             }
         }
 

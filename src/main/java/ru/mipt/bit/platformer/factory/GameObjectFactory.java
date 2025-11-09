@@ -6,9 +6,7 @@ import ru.mipt.bit.platformer.Obstacle;
 import ru.mipt.bit.platformer.Tank;
 import ru.mipt.bit.platformer.config.GameConfiguration;
 import ru.mipt.bit.platformer.graphics.ObstacleGraphics;
-import ru.mipt.bit.platformer.graphics.TankGraphics;
 import ru.mipt.bit.platformer.model.ObstacleModel;
-import ru.mipt.bit.platformer.model.TankModel;
 import ru.mipt.bit.platformer.util.TileMovement;
 
 // Factory for creating game objects (OCP compliance)
@@ -21,17 +19,12 @@ public class GameObjectFactory {
     }
 
     public Tank createTank(TileMovement tileMovement) {
-        TankModel model = new TankModel(
-            config.getPlayerInitialPosition(),
-            config.getTankMovementSpeed()
-        );
-        
-        TankGraphics graphics = new TankGraphics(
+        return new Tank(
             config.getPlayerTexturePath(),
+            config.getPlayerInitialPosition(),
+            config.getTankMovementSpeed(),
             tileMovement
         );
-        
-        return new Tank(model, graphics);
     }
 
     public Obstacle createObstacle(TiledMapTileLayer tileLayer) {
@@ -48,9 +41,7 @@ public class GameObjectFactory {
 
     public Tank createCustomTank(String texturePath, GridPoint2 position, 
                                 float movementSpeed, TileMovement tileMovement) {
-        TankModel model = new TankModel(position, movementSpeed);
-        TankGraphics graphics = new TankGraphics(texturePath, tileMovement);
-        return new Tank(model, graphics);
+        return new Tank(texturePath, position, movementSpeed, tileMovement);
     }
 
     public Obstacle createCustomObstacle(String texturePath, GridPoint2 position,

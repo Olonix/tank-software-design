@@ -8,7 +8,9 @@ import static com.badlogic.gdx.math.MathUtils.isEqual;
 // Tank model without graphics components
 public class TankModel implements TankMovable {
     private final float movementSpeed;
-    
+    private final int maxHealth = 100;
+    private int health;
+
     private GridPoint2 coordinates;
     private GridPoint2 destinationCoordinates;
     private float movementProgress = 1f;
@@ -17,11 +19,12 @@ public class TankModel implements TankMovable {
     public TankModel(GridPoint2 initialCoordinates) {
         this(initialCoordinates, 2f); // default movement speed
     }
-    
+
     public TankModel(GridPoint2 initialCoordinates, float movementSpeed) {
         this.coordinates = new GridPoint2(initialCoordinates);
         this.destinationCoordinates = new GridPoint2(initialCoordinates);
         this.movementSpeed = movementSpeed;
+        this.health = maxHealth;
     }
 
     @Override
@@ -90,5 +93,13 @@ public class TankModel implements TankMovable {
     @Override
     public float getRotation() {
         return rotation;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    public int getMaxHealth() {
+        return maxHealth;
     }
 }
