@@ -2,6 +2,7 @@ package ru.mipt.bit.platformer;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.GridPoint2;
+import ru.mipt.bit.platformer.graphics.HealthBarDecorator;
 import ru.mipt.bit.platformer.graphics.TankGraphics;
 import ru.mipt.bit.platformer.graphics.TankGraphicsRenderer;
 import ru.mipt.bit.platformer.model.TankModel;
@@ -20,9 +21,10 @@ public class Tank {
         this.graphics = graphics;
     }
 
-    public Tank(String texturePath, GridPoint2 initialCoordinates, TileMovement tileMovement) {
-        this.model = new TankModel(initialCoordinates);
-        this.graphics = new TankGraphics(texturePath, tileMovement);
+    public Tank(String texturePath, GridPoint2 initialCoordinates, float movementSpeed, TileMovement tileMovement) {
+        this.model = new TankModel(initialCoordinates, movementSpeed);
+        TankGraphics baseGraphics = new TankGraphics(texturePath, tileMovement);
+        this.graphics = new HealthBarDecorator(baseGraphics);
     }
 
     public void update(float deltaTime) {
@@ -81,5 +83,9 @@ public class Tank {
 
     public TankMovable getModel() {
         return model;
+    }
+
+    public HealthBarDecorator getHealthBarDecorator() {
+        return (HealthBarDecorator) graphics;
     }
 }

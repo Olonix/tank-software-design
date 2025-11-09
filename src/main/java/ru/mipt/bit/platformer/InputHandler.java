@@ -22,6 +22,10 @@ public class InputHandler {
         return null;
     }
 
+    public boolean isToggleHealthPressed() {
+        return Gdx.input.isKeyJustPressed(L);
+    }
+
     // public boolean isShootPressed() {
     //     return Gdx.input.isKeyPressed(SPACE);
     // }
