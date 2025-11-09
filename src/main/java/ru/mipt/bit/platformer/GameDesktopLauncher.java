@@ -33,7 +33,10 @@ public class GameDesktopLauncher implements ApplicationListener {
     
     private Tank player;
     private List<Obstacle> obstacles;
+    private List<AITank> aiTanks;
     private InputHandler inputHandler;
+    private int levelWidth;
+    private int levelHeight;
     
     private final GameConfiguration config;
     private final GameObjectFactory factory;
@@ -65,7 +68,10 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         // create game objects using factory
         obstacles = new ArrayList<>();
-        
+        aiTanks = new ArrayList<>();
+        levelWidth = groundLayer.getWidth();
+        levelHeight = groundLayer.getHeight();
+
         // Load level if loader is provided
         if (levelLoader != null) {
             LevelData levelData = levelLoader.loadLevel();
@@ -86,6 +92,16 @@ public class GameDesktopLauncher implements ApplicationListener {
                     groundLayer
                 );
                 obstacles.add(obstacle);
+            }
+
+            // Create AI tanks at loaded positions
+            for (GridPoint2 aiTankPos : levelData.getAITankPositions()) {
+                AITank aiTank = new AITank(
+                    config.getPlayerTexturePath(), // Use same texture for now
+                    aiTankPos,
+                    tileMovement
+                );
+                aiTanks.add(aiTank);
             }
         } else {
             // Use default configuration
@@ -111,8 +127,8 @@ public class GameDesktopLauncher implements ApplicationListener {
         // handle input
         Direction inputDirection = inputHandler.getInputDirection();
         if (inputDirection != null) {
-            // Check collision with all obstacles at once
-            if (player.canMove(inputDirection, obstacles)) {
+            // Check collision with all obstacles and AI tanks
+            if (canPlayerMove(inputDirection)) {
                 // No collision detected, perform movement
                 player.move(inputDirection);
             }
@@ -120,6 +136,11 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         // update game objects
         player.update(deltaTime);
+
+        // update AI tanks
+        for (AITank aiTank : aiTanks) {
+            aiTank.update(deltaTime, obstacles, aiTanks, player.getModel(), levelWidth, levelHeight);
+        }
 
         // render everything
         levelRenderer.render();
@@ -129,7 +150,43 @@ public class GameDesktopLauncher implements ApplicationListener {
         for (Obstacle obstacle : obstacles) {
             obstacle.render(batch);
         }
+        for (AITank aiTank : aiTanks) {
+            aiTank.render(batch);
+        }
         batch.end();
+    }
+
+    private boolean canPlayerMove(Direction direction) {
+        if (player.isMoving()) {
+            return false;
+        }
+
+        GridPoint2 newPosition = direction.apply(player.getCoordinates());
+
+        // Check bounds
+        if (newPosition.x < 0 || newPosition.x >= levelWidth || newPosition.y < 0 || newPosition.y >= levelHeight) {
+            return false;
+        }
+
+        // Check obstacles
+        for (Obstacle obstacle : obstacles) {
+            if (obstacle.getCoordinates().equals(newPosition)) {
+                return false;
+            }
+        }
+
+        // Check AI tanks
+        for (AITank aiTank : aiTanks) {
+            if (aiTank.getCoordinates().equals(newPosition) || aiTank.getDestinationCoordinates().equals(newPosition)) {
+                return false;
+            }
+            // Check if AI tank is moving to player's position
+            if (aiTank.getDestinationCoordinates().equals(player.getCoordinates())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
@@ -152,6 +209,9 @@ public class GameDesktopLauncher implements ApplicationListener {
         // dispose of all the native resources (classes which implement com.badlogic.gdx.utils.Disposable)
         for (Obstacle obstacle : obstacles) {
             obstacle.dispose();
+        }
+        for (AITank aiTank : aiTanks) {
+            aiTank.dispose();
         }
         player.dispose();
         level.dispose();
