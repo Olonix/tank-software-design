@@ -26,7 +26,7 @@ public class InputHandler {
         return Gdx.input.isKeyJustPressed(L);
     }
 
-    // public boolean isShootPressed() {
-    //     return Gdx.input.isKeyPressed(SPACE);
-    // }
+    public boolean isSpacePressed() {
+        return Gdx.input.isKeyJustPressed(SPACE);
+    }
 }
