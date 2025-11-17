@@ -102,4 +102,15 @@ public class TankModel implements TankMovable {
     public int getMaxHealth() {
         return maxHealth;
     }
+
+    public void takeDamage(int damage) {
+        health -= damage;
+        if (health < 0) {
+            health = 0;
+        }
+    }
+
+    public boolean isDestroyed() {
+        return health <= 0;
+    }
 }

@@ -17,6 +17,12 @@ import ru.mipt.bit.platformer.factory.GameObjectFactory;
 import ru.mipt.bit.platformer.util.TileMovement;
 import ru.mipt.bit.platformer.level.LevelData;
 import ru.mipt.bit.platformer.level.LevelLoader;
+import ru.mipt.bit.platformer.level.LogicalLevel;
+import ru.mipt.bit.platformer.graphics.GraphicsLevel;
+import ru.mipt.bit.platformer.command.Command;
+import ru.mipt.bit.platformer.command.MoveCommand;
+import ru.mipt.bit.platformer.command.ShootCommand;
+import ru.mipt.bit.platformer.model.TankMovable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,15 +36,14 @@ public class GameDesktopLauncher implements ApplicationListener {
     private TiledMap level;
     private MapRenderer levelRenderer;
     private TileMovement tileMovement;
-    
-    private Tank player;
-    private List<Obstacle> obstacles;
-    private List<AITank> aiTanks;
+
+    private LogicalLevel logicalLevel;
+    private GraphicsLevel graphicsLevel;
     private InputHandler inputHandler;
     private int levelWidth;
     private int levelHeight;
     private boolean showHealthBars = false;
-    
+
     private final GameConfiguration config;
     private final GameObjectFactory factory;
     private final LevelLoader levelLoader;
@@ -67,24 +72,25 @@ public class GameDesktopLauncher implements ApplicationListener {
         TiledMapTileLayer groundLayer = getSingleLayer(level);
         tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
 
-        // create game objects using factory
-        obstacles = new ArrayList<>();
-        aiTanks = new ArrayList<>();
         levelWidth = groundLayer.getWidth();
         levelHeight = groundLayer.getHeight();
+
+        // create logical level
+        logicalLevel = new LogicalLevel();
 
         // Load level if loader is provided
         if (levelLoader != null) {
             LevelData levelData = levelLoader.loadLevel();
             
             // Create player at loaded position
-            player = factory.createCustomTank(
+            Tank player = factory.createCustomTank(
                 config.getPlayerTexturePath(),
                 levelData.getPlayerStartPosition(),
                 config.getTankMovementSpeed(),
                 tileMovement
             );
-            
+            logicalLevel.addTank(player);
+
             // Create obstacles at loaded positions
             for (GridPoint2 obstaclePos : levelData.getObstaclePositions()) {
                 Obstacle obstacle = factory.createCustomObstacle(
@@ -92,7 +98,7 @@ public class GameDesktopLauncher implements ApplicationListener {
                     obstaclePos,
                     groundLayer
                 );
-                obstacles.add(obstacle);
+                logicalLevel.addObstacle(obstacle);
             }
 
             // Create AI tanks at loaded positions
@@ -102,15 +108,20 @@ public class GameDesktopLauncher implements ApplicationListener {
                     aiTankPos,
                     tileMovement
                 );
-                aiTanks.add(aiTank);
+                logicalLevel.addAITank(aiTank);
             }
         } else {
             // Use default configuration
-            player = factory.createTank(tileMovement);
+            Tank player = factory.createTank(tileMovement);
+            logicalLevel.addTank(player);
+
             Obstacle treeObstacle = factory.createObstacle(groundLayer);
-            obstacles.add(treeObstacle);
+            logicalLevel.addObstacle(treeObstacle);
         }
-        
+
+        // create graphics level
+        graphicsLevel = new GraphicsLevel(logicalLevel, groundLayer, batch);
+
         // create input handler
         inputHandler = new InputHandler();
     }
@@ -118,55 +129,65 @@ public class GameDesktopLauncher implements ApplicationListener {
     @Override
     public void render() {
         // clear the screen using configuration
-        Gdx.gl.glClearColor(config.getBackgroundRed(), config.getBackgroundGreen(), 
+        Gdx.gl.glClearColor(config.getBackgroundRed(), config.getBackgroundGreen(),
                            config.getBackgroundBlue(), config.getBackgroundAlpha());
         Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
 
         // get time passed since the last render
         float deltaTime = Gdx.graphics.getDeltaTime();
 
-        // handle input
+        // create commands based on input
+        List<Command> commands = new ArrayList<>();
+
+        // handle movement input
         Direction inputDirection = inputHandler.getInputDirection();
-        if (inputDirection != null) {
-            // Check collision with all obstacles and AI tanks
-            if (canPlayerMove(inputDirection)) {
-                // No collision detected, perform movement
-                player.move(inputDirection);
+        if (inputDirection != null && !logicalLevel.getTanks().isEmpty()) {
+            Tank player = logicalLevel.getTanks().get(0); // assuming first tank is player
+            if (canPlayerMove(inputDirection, player)) {
+                commands.add(new MoveCommand(player.getModel(), inputDirection,
+                    logicalLevel.getObstacles(), getAllTankModels(), levelWidth, levelHeight));
             }
+        }
+
+        // handle shooting input (spacebar)
+        if (inputHandler.isSpacePressed() && !logicalLevel.getTanks().isEmpty()) {
+            Tank player = logicalLevel.getTanks().get(0);
+            commands.add(new ShootCommand(player.getModel()));
         }
 
         // handle health bar toggle
         if (inputHandler.isToggleHealthPressed()) {
             showHealthBars = !showHealthBars;
-            player.getHealthBarDecorator().setShowHealthBar(showHealthBars);
-            for (AITank aiTank : aiTanks) {
+            for (Tank tank : logicalLevel.getTanks()) {
+                tank.getHealthBarDecorator().setShowHealthBar(showHealthBars);
+            }
+            for (AITank aiTank : logicalLevel.getAITanks()) {
                 aiTank.getHealthBarDecorator().setShowHealthBar(showHealthBars);
             }
         }
 
-        // update game objects
-        player.update(deltaTime);
-
-        // update AI tanks
-        for (AITank aiTank : aiTanks) {
-            aiTank.update(deltaTime, obstacles, aiTanks, player.getModel(), levelWidth, levelHeight);
+        // execute commands
+        for (Command command : commands) {
+            command.execute();
+            if (command instanceof ShootCommand) {
+                ShootCommand shootCommand = (ShootCommand) command;
+                if (shootCommand.wasSuccessful() && shootCommand.getCreatedBullet() != null) {
+                    logicalLevel.addBullet(shootCommand.getCreatedBullet());
+                }
+            }
         }
+
+        // update logical level (this includes AI decisions and bullet creation)
+        logicalLevel.update(deltaTime, levelWidth, levelHeight);
 
         // render everything
         levelRenderer.render();
-
         batch.begin();
-        player.render(batch);
-        for (Obstacle obstacle : obstacles) {
-            obstacle.render(batch);
-        }
-        for (AITank aiTank : aiTanks) {
-            aiTank.render(batch);
-        }
+        graphicsLevel.render();
         batch.end();
     }
 
-    private boolean canPlayerMove(Direction direction) {
+    private boolean canPlayerMove(Direction direction, Tank player) {
         if (player.isMoving()) {
             return false;
         }
@@ -179,14 +200,14 @@ public class GameDesktopLauncher implements ApplicationListener {
         }
 
         // Check obstacles
-        for (Obstacle obstacle : obstacles) {
+        for (Obstacle obstacle : logicalLevel.getObstacles()) {
             if (obstacle.getCoordinates().equals(newPosition)) {
                 return false;
             }
         }
 
         // Check AI tanks
-        for (AITank aiTank : aiTanks) {
+        for (AITank aiTank : logicalLevel.getAITanks()) {
             if (aiTank.getCoordinates().equals(newPosition) || aiTank.getDestinationCoordinates().equals(newPosition)) {
                 return false;
             }
@@ -197,6 +218,17 @@ public class GameDesktopLauncher implements ApplicationListener {
         }
 
         return true;
+    }
+
+    private List<TankMovable> getAllTankModels() {
+        List<TankMovable> allTanks = new ArrayList<>();
+        for (Tank tank : logicalLevel.getTanks()) {
+            allTanks.add(tank.getModel());
+        }
+        for (AITank aiTank : logicalLevel.getAITanks()) {
+            allTanks.add(aiTank.getModel());
+        }
+        return allTanks;
     }
 
     @Override
@@ -217,13 +249,16 @@ public class GameDesktopLauncher implements ApplicationListener {
     @Override
     public void dispose() {
         // dispose of all the native resources (classes which implement com.badlogic.gdx.utils.Disposable)
-        for (Obstacle obstacle : obstacles) {
+        for (Obstacle obstacle : logicalLevel.getObstacles()) {
             obstacle.dispose();
         }
-        for (AITank aiTank : aiTanks) {
+        for (AITank aiTank : logicalLevel.getAITanks()) {
             aiTank.dispose();
         }
-        player.dispose();
+        for (Tank tank : logicalLevel.getTanks()) {
+            tank.dispose();
+        }
+        graphicsLevel.dispose();
         level.dispose();
         batch.dispose();
     }

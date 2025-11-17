@@ -4,6 +4,8 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.GridPoint2;
 import ru.mipt.bit.platformer.command.Command;
 import ru.mipt.bit.platformer.command.MoveCommand;
+import ru.mipt.bit.platformer.command.ShootCommand;
+import ru.mipt.bit.platformer.model.BulletModel;
 import ru.mipt.bit.platformer.graphics.HealthBarDecorator;
 import ru.mipt.bit.platformer.graphics.TankGraphics;
 import ru.mipt.bit.platformer.graphics.TankGraphicsRenderer;
@@ -31,8 +33,10 @@ public class AITank {
         this.graphics = new HealthBarDecorator(baseGraphics);
     }
 
-    public void update(float deltaTime, List<Obstacle> obstacles, List<AITank> otherTanks, TankMovable playerTank, int levelWidth, int levelHeight) {
+    public BulletModel update(float deltaTime, List<Obstacle> obstacles, List<AITank> otherTanks, TankMovable playerTank, int levelWidth, int levelHeight) {
         model.update(deltaTime);
+
+        BulletModel createdBullet = null;
 
         if (currentCommand == null || currentCommand.isFinished()) {
             generateRandomMove(obstacles, otherTanks, playerTank, levelWidth, levelHeight);
@@ -40,23 +44,37 @@ public class AITank {
 
         if (currentCommand != null && !currentCommand.isFinished()) {
             currentCommand.execute();
+            // Check if this was a shoot command and get the created bullet
+            if (currentCommand instanceof ShootCommand) {
+                ShootCommand shootCommand = (ShootCommand) currentCommand;
+                createdBullet = shootCommand.getCreatedBullet();
+            }
         }
+
+        return createdBullet;
     }
 
     private void generateRandomMove(List<Obstacle> obstacles, List<AITank> otherTanks, TankMovable playerTank, int levelWidth, int levelHeight) {
-        Direction[] directions = Direction.values();
-        Direction randomDirection = directions[random.nextInt(directions.length)];
+        // 30% chance to shoot, 70% chance to move
+        if (random.nextInt(100) < 30) {
+            // Shoot
+            currentCommand = new ShootCommand(model);
+        } else {
+            // Move
+            Direction[] directions = Direction.values();
+            Direction randomDirection = directions[random.nextInt(directions.length)];
 
-        List<TankMovable> allOtherTanks = new java.util.ArrayList<>();
+            List<TankMovable> allOtherTanks = new java.util.ArrayList<>();
 
-        for (AITank tank : otherTanks) {
-            if (tank != this) {
-                allOtherTanks.add(tank.getModel());
+            for (AITank tank : otherTanks) {
+                if (tank != this) {
+                    allOtherTanks.add(tank.getModel());
+                }
             }
-        }
-        allOtherTanks.add(playerTank);
+            allOtherTanks.add(playerTank);
 
-        currentCommand = new MoveCommand(model, randomDirection, obstacles, allOtherTanks, levelWidth, levelHeight);
+            currentCommand = new MoveCommand(model, randomDirection, obstacles, allOtherTanks, levelWidth, levelHeight);
+        }
     }
 
     public void render(Batch batch) {
