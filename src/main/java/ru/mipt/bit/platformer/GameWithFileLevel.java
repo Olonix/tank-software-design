@@ -3,18 +3,18 @@ package ru.mipt.bit.platformer;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import ru.mipt.bit.platformer.config.GameConfiguration;
-import ru.mipt.bit.platformer.level.FileLevelLoader;
+import ru.mipt.bit.platformer.config.GameLauncher;
 
 
 public class GameWithFileLevel {
     public static void main(String[] args) {
-        GameConfiguration gameConfig = new GameConfiguration();
+        GameLauncher gameLauncher = new GameLauncher();
+
+        GameConfiguration gameConfig = gameLauncher.getContext().getBean(GameConfiguration.class);
         Lwjgl3ApplicationConfiguration appConfig = new Lwjgl3ApplicationConfiguration();
-        
+
         appConfig.setWindowedMode(gameConfig.getWindowWidth(), gameConfig.getWindowHeight());
-        
-        FileLevelLoader fileLoader = new FileLevelLoader("level_sample.txt");
-        
-        new Lwjgl3Application(new GameDesktopLauncher(gameConfig, fileLoader), appConfig);
+
+        new Lwjgl3Application(gameLauncher.createLauncherWithFileLevel(), appConfig);
     }
 }

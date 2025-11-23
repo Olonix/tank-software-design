@@ -12,7 +12,9 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.GridPoint2;
+import org.springframework.context.ApplicationContext;
 import ru.mipt.bit.platformer.config.GameConfiguration;
+import ru.mipt.bit.platformer.config.GameLauncher;
 import ru.mipt.bit.platformer.factory.GameObjectFactory;
 import ru.mipt.bit.platformer.util.TileMovement;
 import ru.mipt.bit.platformer.level.LevelData;
@@ -47,19 +49,25 @@ public class GameDesktopLauncher implements ApplicationListener {
     private final GameConfiguration config;
     private final GameObjectFactory factory;
     private final LevelLoader levelLoader;
-    
-    public GameDesktopLauncher(GameConfiguration config, LevelLoader levelLoader) {
+    private final ApplicationContext applicationContext;
+
+    public GameDesktopLauncher(GameConfiguration config, LevelLoader levelLoader, ApplicationContext applicationContext) {
         this.config = config;
-        this.factory = new GameObjectFactory(config);
+        this.factory = applicationContext != null ? applicationContext.getBean(GameObjectFactory.class) : new GameObjectFactory(config);
         this.levelLoader = levelLoader;
+        this.applicationContext = applicationContext;
     }
-    
+
+    public GameDesktopLauncher(GameConfiguration config, LevelLoader levelLoader) {
+        this(config, levelLoader, null);
+    }
+
     public GameDesktopLauncher(GameConfiguration config) {
-        this(config, null);
+        this(config, null, null);
     }
-    
+
     public GameDesktopLauncher() {
-        this(new GameConfiguration(), null);
+        this(new GameConfiguration(), null, null);
     }
 
     @Override
@@ -76,12 +84,12 @@ public class GameDesktopLauncher implements ApplicationListener {
         levelHeight = groundLayer.getHeight();
 
         // create logical level
-        logicalLevel = new LogicalLevel();
+        logicalLevel = applicationContext != null ? applicationContext.getBean(LogicalLevel.class) : new LogicalLevel();
 
         // Load level if loader is provided
         if (levelLoader != null) {
             LevelData levelData = levelLoader.loadLevel();
-            
+
             // Create player at loaded position
             Tank player = factory.createCustomTank(
                 config.getPlayerTexturePath(),
@@ -123,7 +131,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         graphicsLevel = new GraphicsLevel(logicalLevel, groundLayer, batch);
 
         // create input handler
-        inputHandler = new InputHandler();
+        inputHandler = applicationContext != null ? applicationContext.getBean(InputHandler.class) : new InputHandler();
     }
 
     @Override
@@ -264,12 +272,14 @@ public class GameDesktopLauncher implements ApplicationListener {
     }
 
     public static void main(String[] args) {
-        GameConfiguration gameConfig = new GameConfiguration();
+        GameLauncher gameLauncher = new GameLauncher();
+
+        GameConfiguration gameConfig = gameLauncher.getContext().getBean(GameConfiguration.class);
         Lwjgl3ApplicationConfiguration appConfig = new Lwjgl3ApplicationConfiguration();
         
         // Set window size from game configuration
         appConfig.setWindowedMode(gameConfig.getWindowWidth(), gameConfig.getWindowHeight());
-        
-        new Lwjgl3Application(new GameDesktopLauncher(gameConfig), appConfig);
+
+        new Lwjgl3Application(gameLauncher.createDefaultLauncher(), appConfig);
     }
 }
